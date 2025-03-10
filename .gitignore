@@ -1,0 +1,6 @@
+.venv
+__pycache__
+*.pyc
+*.out
+.ipynb_checkpoints
+*.sif
