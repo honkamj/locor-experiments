@@ -14,7 +14,7 @@ The setup script will create a virtual enviroment with required packages install
 
 The repository has been designed to be used with Visual Studio Code (https://code.visualstudio.com/).
 
-The version of locor used for the experiments in the paper is installed to the environment. Improvements may have been made to the locor registration tool after that. For the newest software version, see the repository [here](https://github.com/honkamj/locor "here").
+The version of locor used for the experiments in the paper is installed to the environment. Improvements may have been made to the locor registration tool after that. For the newest software version, see the repository [here](https://github.com/honkamj/locor "here"), and for experimental setup that works with the newest version, see the branch "up-to-date-locor" in this repository.
 
 ## Running the experiments
 
