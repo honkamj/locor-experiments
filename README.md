@@ -14,7 +14,7 @@ The setup script will create a virtual enviroment with required packages install
 
 The repository has been designed to be used with Visual Studio Code (https://code.visualstudio.com/).
 
-The version of locor used for the experiments in the paper is installed to the environment. Improvements may have been made to the locor registration tool after that. For the newest software version, see the repository [here](https://github.com/honkamj/locor "here").
+This branch (up-to-date-locor) contains version of the experiments compatible with the newest version of Locor. For the original setup, see the main branch.
 
 ## Running the experiments
 
@@ -34,11 +34,7 @@ Available methods are: "locor", "locor_ablation_study", "NiftyReg_MIND", "NiftyR
 
 Available datasets are "CERMEP", "IXI", "CT-MR_Thorax-Abdomen_foreground_mask", "CT-MR_Thorax-Abdomen_roi_mask". The data will be downloaded automatically, if possible.
 
-See the [separate instructions](documentation/CERMEP_data_generation.md) for generating the pseudo-CT images for the evaluation on the CERMEP-IDB-MRXFDG dataset.
-
-# Raw data for the results
-
-The raw data for the results can be found in [results.zip](results.zip). 
+See the [separate instructions](documentation/CERMEP_data_generation.md) for generating the pseudo-CT images for the evaluation on the CERMEP-IDB-MRXFDG dataset. 
 
 ## Publication
 

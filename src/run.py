@@ -4,7 +4,6 @@ from application.execute import run_evaluation
 from application.method import (
     ANTsApplication,
     CorrfieldApplication,
-    LocorAblationStudyApplication,
     LocorApplication,
     NiftyRegMINDApplication,
     NiftyRegNMIApplication,
@@ -17,7 +16,6 @@ from data.ixi import IXIDatasetInitializer
 run_evaluation(
     available_applications=[
         LocorApplication(),
-        LocorAblationStudyApplication(),
         NiftyRegMINDApplication(),
         NiftyRegNMIApplication(),
         ANTsApplication(),

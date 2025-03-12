@@ -4,3 +4,4 @@ __pycache__
 *.out
 .ipynb_checkpoints
 *.sif
+.mypy_cache

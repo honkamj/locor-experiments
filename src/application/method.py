@@ -9,7 +9,6 @@ from application.interface import EvaluationApplicationDefinition
 from method.ants import ANTs
 from method.corrfield import Corrfield
 from method.locor import Locor
-from method.locor_ablation_study import LocorAblationStudy
 from method.niftyreg import NiftyRegMIND, NiftyRegNMI
 from method.SRWCR import SRWCR
 
@@ -44,122 +43,6 @@ class LocorApplication(EvaluationApplicationDefinition):
     @property
     def method_name(self) -> str:
         return "locor"
-
-
-class LocorAblationStudyApplication(EvaluationApplicationDefinition):
-    """Locor ablation study evaluation application."""
-
-    def _build_parameters(
-        self, trial: Trial, args: Namespace  # pylint: disable=unused-argument
-    ) -> Mapping[str, Any]:
-        params = {
-            "regularization_weight": trial.suggest_float(
-                "regularization_weight", 1e-1, 1e4, log=True
-            ),
-        }
-        if not args.use_mind_ssc and not args.use_mi:
-            params = params | {
-                "sliding_window_std": trial.suggest_float("sliding_window_std", 0.5, 6.0),
-            }
-            if args.n_local_correlation_ratio_bins is None:
-                if args.do_not_use_learned_features:
-                    if args.do_not_use_derivatives:
-                        params = params | {"n_features": trial.suggest_int("n_features", 2, 5)}
-                    else:
-                        params = params | {"n_features": trial.suggest_int("n_features", 2, 3)}
-                else:
-                    params = params | {
-                        "n_features": trial.suggest_int("n_features", 2, 5),
-                    }
-            else:
-                params = params | {
-                    "base_dense_learning_rate": trial.suggest_float(
-                        "base_dense_learning_rate", 1e-2, 4e-2, log=True
-                    ),
-                    "affine_learning_rate": trial.suggest_float(
-                        "affine_learning_rate", 1e-3, 5e-3, log=True
-                    ),
-                }
-        if args.use_mi or args.use_mind_ssc:
-            params = params | {
-                "affine_learning_rate": trial.suggest_float(
-                    "affine_learning_rate", 1e-3, 2e-2, log=True
-                ),
-                "base_dense_learning_rate": trial.suggest_float(
-                    "base_dense_learning_rate", 1e-2, 1e-1, log=True
-                ),
-            }
-            if args.use_mi:
-                params = params | {
-                    "mi_bins": trial.suggest_int("mi_bins", 10, 24),
-                    "mi_quantile": trial.suggest_float("mi_quantile", 0.0, 0.05),
-                }
-        return params
-
-    def build_hyperparameter_optimization_method(
-        self, trial: Trial, args: Namespace
-    ) -> LocorAblationStudy:
-        return LocorAblationStudy(
-            parameters=dict(self._build_parameters(trial, args))
-            | {
-                "n_local_correlation_ratio_bins": args.n_local_correlation_ratio_bins,
-                "use_derivatives": not args.do_not_use_derivatives,
-                "use_gaussian_window": not args.do_not_use_gaussian_window,
-                "use_log_similarity": not args.do_not_use_log_similarity,
-                "use_learned_features": not args.do_not_use_learned_features,
-                "use_mind_ssc": args.use_mind_ssc,
-                "use_mi": args.use_mi,
-            },
-            devices=args.device,
-        )
-
-    def build_test_method(
-        self, best_parameters: Mapping[str, Any], args: Namespace
-    ) -> LocorAblationStudy:
-        return LocorAblationStudy(parameters=best_parameters, devices=args.device)
-
-    def build_subparser(self, mode: str, subparser: ArgumentParser) -> None:
-        super().build_subparser(mode, subparser)
-        subparser.add_argument("--device", type=str, action="append")
-        subparser.add_argument(
-            "--n-local-correlation-ratio-bins", type=int, required=False, default=None
-        )
-        subparser.add_argument(
-            "--do-not-use-derivatives", action="store_true", required=False, default=False
-        )
-        subparser.add_argument(
-            "--do-not-use-gaussian-window", action="store_true", required=False, default=False
-        )
-        subparser.add_argument(
-            "--do-not-use-log-similarity", action="store_true", required=False, default=False
-        )
-        subparser.add_argument(
-            "--do-not-use-learned-features", action="store_true", required=False, default=False
-        )
-        subparser.add_argument("--use-mind-ssc", action="store_true", required=False, default=False)
-        subparser.add_argument("--use-mi", action="store_true", required=False, default=False)
-
-    @property
-    def method_name(self) -> str:
-        return "locor_ablation_study"
-
-    def method_path(self, args: Namespace) -> str:
-        ablations = []
-        if args.n_local_correlation_ratio_bins is not None:
-            ablations.append(f"local_correlation_ratio_{args.n_local_correlation_ratio_bins}")
-        if args.do_not_use_derivatives:
-            ablations.append("no_derivatives")
-        if args.do_not_use_gaussian_window:
-            ablations.append("no_gaussian_window")
-        if args.do_not_use_log_similarity:
-            ablations.append("no_log_similarity")
-        if args.do_not_use_learned_features:
-            ablations.append("no_learned_features")
-        if args.use_mind_ssc:
-            ablations.append("mind_ssc")
-        if args.use_mi:
-            ablations.append("mi")
-        return f"{self.method_name}{'_' if ablations else ''}{'_'.join(ablations)}"
 
 
 class SRWCRApplication(EvaluationApplicationDefinition):
