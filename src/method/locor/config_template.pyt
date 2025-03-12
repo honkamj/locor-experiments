@@ -5,8 +5,8 @@ include a function with name `build_config` that is then called to dynamically
 build the configuration parameters based on the inputs.
 """
 
-from locor_ablation_study.affine_transformation import AffineTransformationTypeDefinition
-from locor_ablation_study.config_parameters import (
+from locor.affine_transformation import AffineTransformationTypeDefinition
+from locor.config_parameters import (
     AffineStageParameters,
     ConfigBuildingArguments,
     DenseStageParameters,
@@ -15,7 +15,7 @@ from locor_ablation_study.config_parameters import (
     RegistrationParameters,
     RegularizationParameters,
 )
-from locor_ablation_study.regularization import BendingEnergy
+from locor.regularization import BendingEnergy
 
 
 def build_config(arguments: ConfigBuildingArguments) -> RegistrationParameters:
