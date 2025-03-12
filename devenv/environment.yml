@@ -32,6 +32,6 @@ dependencies:
     - optunahub
     - antspyx
     - git+https://github.com/deepmind/surface-distance.git
-    - git+https://github.com/honkamj/composable-mapping
+    - composable-mapping
     - git+https://github.com/honkamj/locor
     - srwcr-baseline.zip
