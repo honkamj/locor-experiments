@@ -1,0 +1,171 @@
+{
+    "data": {
+        "postfixes": {
+            "input": "space-pet_T1w_normalized.nii.gz",
+            "input_mask": "space-pet_T1w_valid_region_mask.nii.gz",
+            "input_body_mask": "space-pet_T1w_body_mask.nii.gz",
+            "label_training": "space-pet_ct_rigidly_registered_masked.nii.gz",
+            "label_training_mask": "space-pet_ct_rigidly_registered_valid_region_mask.nii.gz",
+            "label_non_aligned_body_mask": "space-pet_ct_rigidly_registered_body_mask.nii.gz",
+            "label_non_aligned_non_interpolated": "space-pet_ct_rigidly_registered_non_interpolated_masked.nii.gz",
+            "label_non_aligned_non_interpolated_body_mask": "space-pet_ct_rigidly_registered_non_interpolated_body_mask.nii.gz",
+            "label_aligned": "space-pet_ct_deformably_registered_masked.nii.gz",
+            "label_aligned_mask": "space-pet_T1w_valid_region_mask.nii.gz",
+            "label_non_aligned": "space-pet_ct_rigidly_registered_masked.nii.gz",
+            "label_non_aligned_mask": "space-pet_ct_rigidly_registered_valid_region_mask.nii.gz",
+            "evaluation_mask": "space-pet_evaluation_mask.nii.gz"
+        },
+        "root": ["../data/CERMEP/volumes"]
+    },
+    "data_loader": {
+        "batch_size": 4,
+        "factory_function_evaluation": "data.nifti.interface.init_nifti_evaluation_loader",
+        "factory_function_inference": "data.nifti.interface.init_nifti_inference_loader",
+        "factory_function_training": "data.nifti.interface.init_nifti_training_loader",
+        "inference_batch_size": 4,
+        "inference_stride": [
+            32,
+            32,
+            32
+        ],
+        "label_signal_range": 4096.0,
+        "label_background_value": -1024.0,
+        "min_input_mask_ratio": 1.0,
+        "min_label_mask_ratio": 1.0,
+        "n_inference_workers": 9,
+        "n_validation_workers": 9,
+        "n_workers": 9,
+        "input_noise_amplitude_range": [
+            0,
+            0.02
+        ],
+        "normalization": {
+            "input_mean_and_std": [
+                [
+                    0.0
+                ],
+                [
+                    1.0
+                ]
+            ],
+            "label_mean_and_std": [
+                [
+                    0.0
+                ],
+                [
+                    1000.0
+                ]
+            ],
+            "input_min_and_max": [
+                0.0,
+                6.0
+            ],
+            "label_min_and_max": [
+                -1024.0,
+                3072.0
+            ]
+        },
+        "patch_size": [
+            64,
+            64,
+            64
+        ],
+        "rotation_degree_range": [
+            -25,
+            25
+        ],
+        "log_scale_scale": 0.0,
+        "log_shear_scale": 0.0,
+        "translation_range": [
+            -8,
+            8
+        ],
+        "generate_flips": false,
+        "generate_orthogonal_rotations": false,
+        "shuffling_cluster_size": null,
+        "training_theoretical_stride": [
+            12,
+            12,
+            12
+        ],
+        "voxel_size": [
+            1.2,
+            1.1979,
+            1.1979
+        ],
+        "fusing_mask_smoothing": 2.0
+    },
+    "model": {
+        "n_normalization_groups": 16,
+        "final_activation": "linear",
+        "inference_function_obtainer": "model.inference.get_non_aligned_i2i_inference_function",
+        "n_features_per_block_discriminator": [
+            64,
+            128,
+            256,
+            512,
+            512
+        ],
+        "n_features_per_block_i2i": [
+            64,
+            128,
+            256,
+            512,
+            512
+        ],
+        "n_features_per_block_intra_modality_reg": [
+            32,
+            64,
+            128,
+            256,
+            256
+        ],
+        "n_features_per_block_cross_modality_reg": [
+            32,
+            64,
+            128,
+            256,
+            256
+        ],
+        "n_features_per_block_rigid_reg": [
+            32,
+            64,
+            128,
+            256,
+            256
+        ],
+        "n_input_channels": 1,
+        "n_output_channels": 1
+    },
+    "training": {
+        "learning_rate_discriminator": 0.0004,
+        "learning_rate_generator": 0.0001,
+        "loss": {
+            "deformation": {
+                "affinity_weight": 1.0,
+                "orthonormality_weight": 0.01,
+                "properness_weight": 0.1,
+                "voxel_size": [
+                    1.2,
+                    1.1979,
+                    1.1979
+                ],
+                "first_derivatives_central": false,
+                "second_derivatives_central": false
+            },
+            "forward_rigidity_weight": 0.5,
+            "inverse_rigidity_weight": 0.5,
+            "discriminator_weight": 0.01,
+            "discriminator_weight_generator": 0.01,
+            "similarity_loss": "mae",
+            "use_implicit_di": false,
+            "intra_modality_similarity_weight": 1.0,
+            "cross_modality_similarity_weight": 1.0,
+            "rigid_similarity_weight": 1.0,
+            "di_weight": 1.0,
+            "max_rotation": 30,
+            "max_translation": 64
+        },
+        "n_epochs": 15
+    }
+}
