@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from typing import Any, Mapping
 
+import optunahub
 from optuna import Trial
-from optuna.samplers import BaseSampler, GPSampler, TPESampler
+from optuna.samplers import BaseSampler
 
 from data.interface import RegistrationDatasetInitializer
 from method.interface import RegistrationMethod
@@ -31,9 +32,8 @@ class EvaluationApplicationDefinition(ABC):
         self, args: Namespace, n_objectives: int  # pylint: disable=unused-argument
     ) -> BaseSampler:
         """Build a sampler for the given arguments."""
-        if n_objectives > 1:
-            return TPESampler()
-        return GPSampler(deterministic_objective=self.deterministic_objective)
+        module = optunahub.load_module("samplers/hebo")
+        return module.HEBOSampler()
 
     def build_subparser(self, mode: str, subparser: ArgumentParser) -> None:
         """Build the subparser for the given application mode."""

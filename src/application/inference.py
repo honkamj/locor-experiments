@@ -1,13 +1,13 @@
 """Inference for a registration algorithm."""
 
-from json import dump
+from json import dump, load
 from os import makedirs
-from os.path import basename, join
+from os.path import basename, isfile, join
 from traceback import print_exc
 
-from nibabel import Nifti1Image
-from nibabel import load as nib_load
-from nibabel import save as nib_save
+from nibabel import Nifti1Image  # type: ignore
+from nibabel import load as nib_load  # type: ignore
+from nibabel import save as nib_save  # type: ignore
 from numpy import array, mean
 from tqdm import tqdm  # type: ignore
 
@@ -23,6 +23,7 @@ def registration_inference(
     target_folder: str,
     save_displacement_field: bool = False,
     save_deformed_image: bool = False,
+    skip_existing_evaluations: bool = False,
 ) -> float:
     """Perform inference and evaluation for a registration method.
 
@@ -40,6 +41,17 @@ def registration_inference(
         moving_mask_path,
     ) in tqdm(enumerate(dataset)):
         makedirs(join(target_folder, case_name), exist_ok=True)
+        case_basename = basename(case_name)
+        results_file_path = join(target_folder, case_name, f"{case_basename}-evaluation.json")
+        if skip_existing_evaluations and isfile(results_file_path):
+            with open(
+                results_file_path,
+                mode="r",
+                encoding="utf-8",
+            ) as results_file:
+                evaluation_results = load(results_file)
+            scores.append(dataset.metrics_to_single_score(evaluation_results))
+            continue
         try:
             displacement_field, affine = method.register(
                 reference_image_path,
@@ -50,7 +62,6 @@ def registration_inference(
         except Exception:
             displacement_field, affine = obtain_zero_displacement_field(reference_image_path)
             print_exc()
-        case_basename = basename(case_name)
         if save_displacement_field:
             nib_save(
                 Nifti1Image(displacement_field, affine=affine),

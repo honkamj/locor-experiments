@@ -1,103 +1,142 @@
 """GP related algorithms"""
 
-from typing import cast
+from functools import partial
+from logging import warning
+from typing import Callable, Sequence
 
 import numpy as np
 import optuna
-from optuna._gp import acqf, gp, prior
-from optuna._gp.gp import posterior
-from optuna._gp.search_space import ScaleType, get_search_space_and_normalized_params
-from optuna.samplers._gp import GPSampler
-from optuna.study import StudyDirection
-from optuna.trial import TrialState
-from torch import Tensor, from_numpy, tensor
+import optunahub
+import torch
+from hebo.models.base_model import BaseModel  # type: ignore
+from hebo.models.model_factory import get_model  # type: ignore
+from hebo.optimizers.hebo import HEBO  # type: ignore
+from sklearn.preprocessing import PowerTransformer  # type: ignore
+from torch import Tensor
+
+
+def _inverse_transform(
+    values: Tensor, power_transformer: PowerTransformer, std: np.ndarray
+) -> Tensor:
+    return values.new_tensor(power_transformer.inverse_transform(values.numpy(force=True)) * std)
+
+
+def _get_gp_model(hebo_sampler: HEBO) -> tuple[BaseModel, Callable[[Tensor], Tensor]]:
+    xc, xe = hebo_sampler.space.transform(hebo_sampler.X)
+    try:
+        std = hebo_sampler.y.std()
+        if hebo_sampler.y.min() <= 0:
+            power_transformer = PowerTransformer(method="yeo-johnson")
+            y: torch.Tensor = torch.FloatTensor(
+                power_transformer.fit_transform(hebo_sampler.y / std)
+            )
+        else:
+            power_transformer = PowerTransformer(method="box-cox")
+            y = torch.FloatTensor(power_transformer.fit_transform(hebo_sampler.y / std))
+            if y.std() < 0.5:
+                power_transformer = PowerTransformer(method="yeo-johnson")
+                y = torch.FloatTensor(power_transformer.fit_transform(hebo_sampler.y / y.std()))
+        inverse_transform: Callable[[Tensor], Tensor] = partial(
+            _inverse_transform, power_transformer=power_transformer, std=std
+        )
+        if y.std() < 0.5:
+            raise RuntimeError("Power transformation failed")
+        model = get_model(
+            hebo_sampler.model_name,
+            hebo_sampler.space.num_numeric,
+            hebo_sampler.space.num_categorical,
+            1,
+            **hebo_sampler.model_config,
+        )
+        model.fit(xc, xe, y)
+    except Exception:
+        inverse_transform = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
+        y = torch.FloatTensor(hebo_sampler.y).clone()
+        model = get_model(
+            hebo_sampler.model_name,
+            hebo_sampler.space.num_numeric,
+            hebo_sampler.space.num_categorical,
+            1,
+            **hebo_sampler.model_config,
+        )
+        model.fit(xc, xe, y)
+    return model, inverse_transform
 
 
 def evaluate_posterior_predictive(
     study: optuna.Study,
-    deterministic_objective: bool = False,
     objective_index: int = 0,
-    fit_to_quantile: float = 0.0,
-) -> tuple[Tensor, Tensor, Tensor]:
+) -> tuple[Tensor, Tensor, Callable[[Tensor], Tensor], Sequence[int]]:
     """Evaluate posterior predictive distribution at sample locations"""
-    search_space = GPSampler().infer_relative_search_space(study, None)  # type:ignore
-    states = (TrialState.COMPLETE,)
-    trials = study.get_trials(states=states)
-
-    (
-        internal_search_space,
-        normalized_params,
-    ) = get_search_space_and_normalized_params(trials, search_space)
-
-    _sign = -1.0 if study.directions[objective_index] == StudyDirection.MINIMIZE else 1.0
-
-    score_vals = np.array([_sign * cast(float, trial.values[objective_index]) for trial in trials])
-    threshold = np.quantile(score_vals, fit_to_quantile)
-
-    included_trials = score_vals > threshold
-    score_vals = score_vals[included_trials]
-    normalized_params = normalized_params[included_trials]
-
-    if np.any(~np.isfinite(score_vals)):
-        finite_score_vals = score_vals[np.isfinite(score_vals)]
-        best_finite_score = np.max(finite_score_vals, initial=0.0)
-        worst_finite_score = np.min(finite_score_vals, initial=0.0)
-
-        score_vals = np.clip(score_vals, worst_finite_score, best_finite_score)
-
-    score_vals_mean = score_vals.mean()
-    score_vals_std = max(1e-10, score_vals.std())
-    standarized_score_vals = (score_vals - score_vals_mean) / score_vals_std
-
-    kernel_params = gp.fit_kernel_params(
-        X=normalized_params,
-        Y=standarized_score_vals,
-        is_categorical=(internal_search_space.scale_types == ScaleType.CATEGORICAL),
-        log_prior=prior.default_log_prior,
-        minimum_noise=prior.DEFAULT_MINIMUM_NOISE_VAR,
-        deterministic_objective=deterministic_objective,
-    )
-    acqf_params = acqf.create_acqf_params(
-        acqf_type=acqf.AcquisitionFunctionType.LOG_EI,
-        kernel_params=kernel_params,
-        search_space=internal_search_space,
-        X=normalized_params,
-        Y=standarized_score_vals,
-    )
-    mean, var = posterior(
-        acqf_params.kernel_params,
-        from_numpy(acqf_params.X),
-        from_numpy(acqf_params.search_space.scale_types == ScaleType.CATEGORICAL),
-        from_numpy(acqf_params.cov_Y_Y_inv),
-        from_numpy(acqf_params.cov_Y_Y_inv_Y),
-        from_numpy(normalized_params),
-    )
-    pred_mean = (mean * score_vals_std + score_vals_mean) * _sign
-    pred_var = var * score_vals_std**2
-    return (
-        pred_mean,
-        pred_var,
-        from_numpy(included_trials),
-    )
-
-
-def get_best_posterior_trial(
-    study: optuna.Study,
-    deterministic_objective: bool = False,
-    objective_index: int = 0,
-    fit_to_quantile: float = 0.0,
-) -> int:
-    """Get the index of the best trial in the posterior predictive distribution"""
-    all_indices = tensor(
-        [trial.number for trial in study.get_trials(states=(TrialState.COMPLETE,))]
-    )
-    _sign = -1.0 if study.directions[objective_index] == StudyDirection.MINIMIZE else 1.0
-    pred_mean, _pred_var, included_trials = evaluate_posterior_predictive(
+    if len(study.directions) > 1:
+        raise ValueError(
+            "Posterior predictive evaluation is only supported for single-objective studies."
+        )
+    if objective_index != 0:
+        raise ValueError(f"Invalid objective index {objective_index}.")
+    optuna_search_space = optuna.search_space.IntersectionSearchSpace().calculate(study)
+    optuna_hebo_module = optunahub.load_module("samplers/hebo")
+    optuna_hebo_sampler = optuna_hebo_module.HEBOSampler(search_space=optuna_search_space)
+    hebo_sampler: HEBO = optuna_hebo_sampler._hebo  # pylint: disable=protected-access
+    trials = study.get_trials(states=(optuna.trial.TrialState.COMPLETE,))
+    optuna_hebo_sampler._transform_to_dict_and_observe(  # pylint: disable=protected-access
+        hebo_sampler,
+        optuna_search_space,
         study,
-        deterministic_objective=deterministic_objective,
-        objective_index=objective_index,
-        fit_to_quantile=fit_to_quantile,
+        trials,
     )
-    pred_mean = pred_mean * _sign
-    best_index = all_indices[included_trials][pred_mean.argmax()]
-    return int(best_index)
+    trial_indices = [trial.number for trial in trials]
+    gp_model, inverse_transform = _get_gp_model(hebo_sampler)
+    xc, xe = hebo_sampler.space.transform(hebo_sampler.X)
+    posterior_predictive_mean, posterior_predictive_variance = gp_model.predict(xc, xe)
+    return (
+        posterior_predictive_mean,
+        posterior_predictive_variance,
+        inverse_transform,
+        trial_indices,
+    )
+
+
+def get_best_posterior_trials(
+    study: optuna.Study,
+    objective_index: int = 0,
+    n_best_trials: int = 1,
+    repeats: int = 50,
+) -> Sequence[int]:
+    """Get the index of the best trial in terms of posterior mean
+
+    Args:
+        study (optuna.Study): The Optuna study to evaluate.
+        objective_index (int, optional): The index of the objective to consider. Defaults to 0.
+        repeats (int, optional): Number of repetitions for posterior predictive
+            evaluation. Defaults to 50. GP fitting involves (very small)
+            randomness, so we repeat the evaluation to get a more stable
+            estimate of the posterior mean.
+    """
+    means = []
+    non_inverse_transformed_means = []
+    do_not_use_inverse_transform = False
+    for _ in range(repeats):
+        (
+            posterior_predictive_mean,
+            _posterior_predictive_variance,
+            inverse_transform,
+            trial_indices,
+        ) = evaluate_posterior_predictive(
+            study,
+            objective_index=objective_index,
+        )
+        means.append(inverse_transform(posterior_predictive_mean))
+        non_inverse_transformed_means.append(posterior_predictive_mean)
+        if means[-1].isnan().any():
+            do_not_use_inverse_transform = True
+    if do_not_use_inverse_transform:
+        means = non_inverse_transformed_means
+        warning(
+            "Warning: Inverse transformation of the GP output failed. "
+            "Using non-inverse-transformed values to select the best trials. "
+            "This is very unlikely to cause any issues."
+        )
+    posterior_predictive_mean = torch.stack(means, dim=0).mean(dim=0)
+    best_trial_indices = torch.argsort(posterior_predictive_mean, dim=0, stable=True)
+    return [trial_indices[int(best_trial_indices[order, 0])] for order in range(n_best_trials)]

@@ -1,6 +1,8 @@
 # Repository for reproducing the results in the paper introducing Locor
 
-This repostory contains the code for reproducing the results in the paper introducing the Locor registration method (see the [Publication](#publication) section). The repository for the registration method itself can be found at [https://github.com/honkamj/locor](https://github.com/honkamj/locor "https://github.com/honkamj/locor").
+This repostory contains the code for reproducing the results in the paper introducing the Locor registration method (see the [Publication](#publication) section) introduced at MICCAI 2025. The repository for the registration method itself can be found at [https://github.com/honkamj/locor](https://github.com/honkamj/locor "https://github.com/honkamj/locor").
+
+Note: The main branch contains an improved experimental setup whose results have been updated to the [arXiv version of the paper](https://arxiv.org/abs/2503.05335). The experimental setup used by the MICCAI 2025 conference paper contained a few bugs/shortcomings. The original setup is documented by the branch [original_setup](https://github.com/honkamj/locor-experiments/tree/original_setup). However, the conclusions of the original paper hold.
 
 ## Environment setup
 
@@ -24,11 +26,15 @@ The experiments can be ran via the ''run.py'' python script.
 
 To run a hyperparameter optimization for given dataset and method, run the following command:
 
-    python run.py --target-folder <folder_for_the_results> --data-root <data_root_where_the_data_will_be_downloaded> --n-trials <number_of_hyperparameter_optimization_trials> --dataset <name_of_the dataset> <name_of_the_method> optimize_hyperparameters <any_method_specific_arguments>
+    python run.py --target-folder <folder_for_the_results> --data-root <data_root_where_the_data_will_be_downloaded> --dataset <name_of_the dataset> <name_of_the_method> optimize_hyperparameters --n-trials <number_of_hyperparameter_optimization_trials> <any_method_specific_arguments>
+
+To run the 5 repeats on validation set for the 5 best hyperparameter candidates, run the following command:
+
+    python run.py --target-folder <folder_for_the_results> --data-root <data_root_where_the_data_will_be_downloaded> --dataset <name_of_the dataset> <name_of_the_method> test --n-repeats 5 --n-best-validation-trials 5 --n-expected-validation-trials <number_of_hyperparameter_optimization_trials> --save-best-trial-index-to-filename best_validation_trial_index.txt --test-division validation <any_method_specific_arguments>
 
 After the hyperparameter optimization has been done, run the following command to run the evaluation on the test set:
 
-    python run.py --target-folder <folder_for_the_results> --data-root <data_root_where_the_data_will_be_downloaded> --n-trials <number_of_test_trials> --dataset <name_of_the dataset> <name_of_the_method> test --fit-gp-to-quantile 0.4 <any_method_specific_arguments>
+    python run.py --target-folder <folder_for_the_results> --data-root <data_root_where_the_data_will_be_downloaded> --dataset <name_of_the dataset> <name_of_the_method> test --n-repeats 5 --load-validation-trial-index-from-filename best_validation_trial_index.txt --test-division test <any_method_specific_arguments>
 
 Available methods are: "locor", "locor_ablation_study", "NiftyReg_MIND", "NiftyReg_NMI", "ANTs", "corrfield", and "SRWCR".
 
@@ -36,15 +42,13 @@ Available datasets are "CERMEP", "IXI", "CT-MR_Thorax-Abdomen_foreground_mask", 
 
 See the [separate instructions](documentation/CERMEP_data_generation.md) for generating the pseudo-CT images for the evaluation on the CERMEP-IDB-MRXFDG dataset.
 
-NOTE: Due to an oversight, some baseline results in the MICCAI 2025 paper used hyperparameters from the best validation trial instead of those selected via the intended GP-based smoothing. Such approach can be replicated by omitting the "--fit-gp-to-quantile" argument. The resulting numerical differences are minor for the baselines in question and have no effect on the conclusions of the paper.
-
 ## Publication
 
 If you use the repository, please cite (see [bibtex](citations.bib)):
 
 - **New multimodal similarity measure for image registration via modeling local functional dependence with linear combination of learned basis functions**  
 [Joel Honkamaa](https://github.com/honkamj "Joel Honkamaa"), Pekka Marttinen  
-Accepted for MICCAI 2025 ([eprint arXiv:2503.05335](https://arxiv.org/abs/2503.05335 "eprint arXiv:2503.05335"))
+MICCAI 2025 ([eprint arXiv:2503.05335](https://arxiv.org/abs/2503.05335 "eprint arXiv:2503.05335"))
 
 ## License
 

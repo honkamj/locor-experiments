@@ -24,8 +24,17 @@ class LocorApplication(EvaluationApplicationDefinition):
             "regularization_weight": trial.suggest_float(
                 "regularization_weight", 1e-1, 1e4, log=True
             ),
-            "sliding_window_std": trial.suggest_float("sliding_window_std", 0.5, 6.0),
-            "n_features": trial.suggest_int("n_features", 2, 5),
+            "affine_learning_rate": trial.suggest_float(
+                "affine_learning_rate", 1e-3, 1e-1, log=True
+            ),
+            "base_dense_learning_rate": trial.suggest_float(
+                "base_dense_learning_rate", 1e-3, 1e-1, log=True
+            ),
+            "feature_learning_rate": trial.suggest_float(
+                "feature_learning_rate", 1e-3, 1e-1, log=True
+            ),
+            "sliding_window_std": trial.suggest_float("sliding_window_std", 0.35, 4.0),
+            "n_features": trial.suggest_int("n_features", 1, 5),
         }
 
     def build_hyperparameter_optimization_method(self, trial: Trial, args: Namespace) -> Locor:
@@ -56,44 +65,35 @@ class LocorAblationStudyApplication(EvaluationApplicationDefinition):
             "regularization_weight": trial.suggest_float(
                 "regularization_weight", 1e-1, 1e4, log=True
             ),
+            "affine_learning_rate": trial.suggest_float(
+                "affine_learning_rate", 1e-3, 1e-1, log=True
+            ),
+            "base_dense_learning_rate": trial.suggest_float(
+                "base_dense_learning_rate", 1e-3, 1e-1, log=True
+            ),
         }
         if not args.use_mind_ssc and not args.use_mi:
             params = params | {
-                "sliding_window_std": trial.suggest_float("sliding_window_std", 0.5, 6.0),
+                "sliding_window_std": trial.suggest_float("sliding_window_std", 0.35, 4.0),
             }
             if args.n_local_correlation_ratio_bins is None:
                 if args.do_not_use_learned_features:
                     if args.do_not_use_derivatives:
-                        params = params | {"n_features": trial.suggest_int("n_features", 2, 5)}
+                        params = params | {"n_features": trial.suggest_int("n_features", 1, 5)}
                     else:
-                        params = params | {"n_features": trial.suggest_int("n_features", 2, 3)}
+                        params = params | {"n_features": trial.suggest_int("n_features", 1, 3)}
                 else:
                     params = params | {
-                        "n_features": trial.suggest_int("n_features", 2, 5),
+                        "n_features": trial.suggest_int("n_features", 1, 5),
+                        "feature_learning_rate": trial.suggest_float(
+                            "feature_learning_rate", 1e-3, 1e-1, log=True
+                        ),
                     }
-            else:
-                params = params | {
-                    "base_dense_learning_rate": trial.suggest_float(
-                        "base_dense_learning_rate", 1e-2, 4e-2, log=True
-                    ),
-                    "affine_learning_rate": trial.suggest_float(
-                        "affine_learning_rate", 1e-3, 5e-3, log=True
-                    ),
-                }
-        if args.use_mi or args.use_mind_ssc:
+        if args.use_mi:
             params = params | {
-                "affine_learning_rate": trial.suggest_float(
-                    "affine_learning_rate", 1e-3, 2e-2, log=True
-                ),
-                "base_dense_learning_rate": trial.suggest_float(
-                    "base_dense_learning_rate", 1e-2, 1e-1, log=True
-                ),
+                "mi_bins": trial.suggest_int("mi_bins", 10, 24),
+                "mi_quantile": trial.suggest_float("mi_quantile", 0.0, 0.05),
             }
-            if args.use_mi:
-                params = params | {
-                    "mi_bins": trial.suggest_int("mi_bins", 10, 24),
-                    "mi_quantile": trial.suggest_float("mi_quantile", 0.0, 0.05),
-                }
         return params
 
     def build_hyperparameter_optimization_method(
@@ -173,8 +173,11 @@ class SRWCRApplication(EvaluationApplicationDefinition):
                 "regularization_weight", 1e-1, 1e4, log=True
             ),
             "sliding_window_stride": trial.suggest_int("sliding_window_stride", 3, 5),
+            "affine_learning_rate": trial.suggest_float(
+                "affine_learning_rate", 1e-3, 1e-1, log=True
+            ),
             "base_dense_learning_rate": trial.suggest_float(
-                "base_dense_learning_rate", 1e-2, 5e-2, log=True
+                "base_dense_learning_rate", 1e-3, 1e-1, log=True
             ),
         }
 
@@ -243,14 +246,10 @@ class NiftyRegMINDApplication(EvaluationApplicationDefinition):
     ) -> NiftyRegMIND:
         return NiftyRegMIND(
             parameters={
-                "bending_energy_weight": trial.suggest_float(
-                    "bending_energy_weight", 1e-4, 1e-2, log=True
-                ),
-                "first_order_penalty_weight": trial.suggest_float(
-                    "first_order_penalty_weight", 1e-3, 1e-1, log=True
-                ),
-                "mind_offset": trial.suggest_int("mind_offset", 1, 2),
+                "bending_energy_weight": 0.0001026207225458064,
+                "first_order_penalty_weight": 0.002338142723107715,
                 "velocity_field": False,
+                "mind_offset": 1.0,
             },
             niftyreg_path=args.niftyreg_path,
             n_threads=args.n_threads,

@@ -162,7 +162,7 @@ class CERMEPDatasetInitializer(RegistrationDatasetInitializer):
         filtered_ants = iMath(filtered_ants, "GetLargestComponent")
         filtered_ants = iMath(filtered_ants, "MC", 8)
         filtered_ants = iMath(filtered_ants, "FillHoles").threshold_image(1, 2)
-        filtered_ants = iMath(filtered_ants, "ME", 4)
+        filtered_ants = iMath(filtered_ants, "MD", 2)
         return filtered_ants.numpy()
 
     def _load(self, data_folder: str, division: str) -> "RegistrationDataset":

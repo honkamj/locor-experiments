@@ -7,21 +7,18 @@ dependencies:
   - pytorch::pytorch-cuda=11.8
   - pytorch::torchvision
   - pytorch::torchaudio
-  - pytorch::pytorch=2.5
+  - pytorch::pytorch=2.5.0
   - matplotlib
   - ipykernel
-  - tensorboard
   - numpy
   - scipy
   - pylint
   - mypy
   - pip
+  - mkl<2024.1
   - scikit-image
   - tqdm
-  - attrs
   - gitpython
-  - nbconvert
-  - tabulate
   - black
   - isort
   - absl-py
@@ -31,6 +28,7 @@ dependencies:
     - optuna
     - optunahub
     - antspyx
+    - hebo
     - git+https://github.com/deepmind/surface-distance.git
     - git+https://github.com/honkamj/composable-mapping@d7e28b68017f359840fdb77850e0dc5a9ddd9431
     - git+https://github.com/honkamj/locor@15015ed30a33b33c62f8b008621711a702c6cada
