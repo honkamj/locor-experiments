@@ -2,6 +2,13 @@
 
 This repostory contains the code for reproducing the results in the paper introducing the Locor registration method (see the [Publication](#publication) section). The repository for the registration method itself can be found at [https://github.com/honkamj/locor](https://github.com/honkamj/locor "https://github.com/honkamj/locor").
 
+Note: This branch contains the experimental setup used in the MICCAI 2025 conference publication. An improved setup is documented by the main branch. The following bugs/shortcomings are present in this branch:
+- Due to a bug, standard deviation for the Gaussian function defining the local window size is inadvertly fixed to 1.0 for our method (and Locor polynom.) during the hyperparameter optimization.
+- Evaluation masks for Head MRI-CT registration tasks are accidentally eroded, instead of dilated, versions of the body mask.
+- Inferior hyperparameter optimizer is used.
+- Less hyperparameters are included in the optimization.
+However, the main conclusions of the conference paper hold despite of these shortcomings.
+
 ## Environment setup
 
 First install conda (https://docs.conda.io/en/latest/). To setup the enviroment navigate to directory ''devenv'' and execute ''setup.py'' with Python 3:
@@ -36,7 +43,7 @@ Available datasets are "CERMEP", "IXI", "CT-MR_Thorax-Abdomen_foreground_mask", 
 
 See the [separate instructions](documentation/CERMEP_data_generation.md) for generating the pseudo-CT images for the evaluation on the CERMEP-IDB-MRXFDG dataset.
 
-NOTE: Due to an oversight, some baseline results in the MICCAI 2025 paper used hyperparameters from the best validation trial instead of those selected via the intended GP-based smoothing. Such approach can be replicated by omitting the "--fit-gp-to-quantile" argument. The resulting numerical differences are minor for the baselines in question and have no effect on the conclusions of the paper.
+NOTE: Due to an oversight, some baseline results in the MICCAI 2025 conference paper used hyperparameters from the best validation trial instead of those selected via the intended GP-based smoothing. Such approach can be replicated by omitting the "--fit-gp-to-quantile" argument. The resulting numerical differences are minor for the baselines in question and have no effect on the conclusions of the paper.
 
 ## Publication
 
@@ -44,7 +51,7 @@ If you use the repository, please cite (see [bibtex](citations.bib)):
 
 - **New multimodal similarity measure for image registration via modeling local functional dependence with linear combination of learned basis functions**  
 [Joel Honkamaa](https://github.com/honkamj "Joel Honkamaa"), Pekka Marttinen  
-Accepted for MICCAI 2025 ([eprint arXiv:2503.05335](https://arxiv.org/abs/2503.05335 "eprint arXiv:2503.05335"))
+MICCAI 2025 ([Open access](https://papers.miccai.org/miccai-2025/paper/1747_paper.pdf))
 
 ## License
 
