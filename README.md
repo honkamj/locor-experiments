@@ -2,7 +2,7 @@
 
 This repostory contains the code for reproducing the results in the paper introducing the Locor registration method (see the [Publication](#publication) section) introduced at MICCAI 2025. The repository for the registration method itself can be found at [https://github.com/honkamj/locor](https://github.com/honkamj/locor "https://github.com/honkamj/locor").
 
-Note: The main branch contains an improved experimental setup whose results have been updated to the [arXiv version of the paper](https://arxiv.org/abs/2503.05335). The experimental setup used by the MICCAI 2025 conference paper contained a few bugs/shortcomings. The original setup is documented by the branch [original_setup](https://github.com/honkamj/locor-experiments/tree/original_setup). However, the conclusions of the original paper hold.
+Note: The main branch implements an improved experimental setup with the results updated to the [arXiv version of the paper](https://arxiv.org/abs/2503.05335). The experimental setup used by the MICCAI 2025 conference paper contained a few bugs/shortcomings. The original setup is documented by the branch [original_setup](https://github.com/honkamj/locor-experiments/tree/original_setup). However, the conclusions of the original paper hold.
 
 ## Environment setup
 
