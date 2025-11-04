@@ -4,10 +4,11 @@ This repostory contains the code for reproducing the results in the paper introd
 
 Note: This branch contains the experimental setup used in the MICCAI 2025 conference publication. An improved setup is documented by the main branch. The following bugs/shortcomings are present in this branch:
 - Due to a bug, standard deviation for the Gaussian function defining the local window size is inadvertly fixed to 1.0 for our method (and Locor polynom.) during the hyperparameter optimization.
-- Evaluation masks for Head MRI-CT registration tasks are accidentally eroded, instead of dilated, versions of the body mask.
+- The evaluation masks for the Head MRI-CT registration task are accidentally eroded, instead of dilated, from the body masks.
 - Inferior hyperparameter optimizer is used.
 - Less hyperparameters are included in the optimization.
-However, the main conclusions of the conference paper hold despite of these shortcomings.
+
+The conclusions of the conference paper still hold.
 
 ## Environment setup
 
